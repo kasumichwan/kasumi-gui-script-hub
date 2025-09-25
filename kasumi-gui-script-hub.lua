@@ -1084,29 +1084,34 @@ end
 
 -- HELP POPUP (DRAGGABLE) ----------------------------------------------
 
+-- HELP POPUP (DRAGGABLE, RELIABLE SCROLL) -----------------------------
+
+-- Overlay
 local helpOverlay = create("Frame", {
     Name = "HelpOverlay",
     BackgroundColor3 = Color3.new(0,0,0),
     BackgroundTransparency = 1,
     Size = UDim2.new(1,0,1,0),
     Visible = false,
-    ZIndex = 21,
+    ZIndex = 45,
 })
 helpOverlay.Parent = screenGui
 
+-- Window
 local helpWindow = create("Frame", {
     Name = "HelpWindow",
     BackgroundColor3 = Config.Theme.Bg,
     BorderSizePixel = 0,
     AnchorPoint = Vector2.new(0.5,0.5),
     Position = UDim2.new(0.5,0,0.5,0),
-    Size = UDim2.fromOffset(400, 300),
+    Size = UDim2.fromOffset(460, 320),
 }, {
     create("UICorner", { CornerRadius = UDim.new(0, 10) }),
     create("UIStroke", { Color = Config.Theme.Stroke, Thickness = 1 }),
 })
 helpWindow.Parent = helpOverlay
 
+-- Title bar
 local helpTitle = create("TextLabel", {
     Name = "HelpTitle",
     BackgroundTransparency = 1,
@@ -1121,6 +1126,7 @@ local helpTitle = create("TextLabel", {
 })
 helpTitle.Parent = helpWindow
 
+-- Close button
 local helpBtnClose = create("TextButton", {
     Name = "HelpClose",
     Size = UDim2.fromOffset(32, 28),
@@ -1145,16 +1151,16 @@ local helpScroll = create("ScrollingFrame", {
     Size = UDim2.new(1,-32,1,-80),
     Position = UDim2.fromOffset(16,50),
     ScrollBarThickness = 6,
-    Active = true,
-    AutomaticCanvasSize = Enum.AutomaticSize.Y,
-    ScrollingDirection = Enum.ScrollingDirection.Y,
+    Active = true,                                   -- drag-to-scroll on touch
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,      -- let scroller compute height
+    ScrollingDirection = Enum.ScrollingDirection.Y,  -- vertical scroll only
 }, {
     create("UICorner", { CornerRadius = UDim.new(0, 8) }),
     create("UIStroke", { Color = Config.Theme.Stroke, Thickness = 1 }),
 })
 helpScroll.Parent = helpWindow
 
--- Content container INSIDE the scroller (important)
+-- Inner content container (important for reliable autosize)
 local helpContent = create("Frame", {
     Name = "HelpContent",
     BackgroundTransparency = 1,
@@ -1174,27 +1180,23 @@ local helpContent = create("Frame", {
 })
 helpContent.Parent = helpScroll
 
+-- The help text
 local helpText = create("TextLabel", {
     BackgroundTransparency = 1,
-    Size = UDim2.new(1, 0, 0, 0),  -- full width, auto height
+    Size = UDim2.new(1, 0, 0, 0),    -- fill width; height grows automatically
     AutomaticSize = Enum.AutomaticSize.Y,
     Font = Enum.Font.Gotham,
     Text = [[
-Welcome to Kasumi GUI Script Hub!
-
-Since this is still new, I need your help to suggest games that you want me to add.
+Since this is still new, I need your help to suggest games that you want me to add. 
 Just comment on any of my uploads in rscripts.net and I will gladly find the best scripts for you!
 
 How to get the script?
-
 Step 1: Copy and paste the link to your browser.
 Step 2: Click "go to destination" wait for 10 seconds and click "continue with ads".
 Step 3: Click again "go to destination" and wait the loading time to finish.
 Step 4: Click the proceed button and follow the instructions.
-
-You should redirect to pastebin.com, copy the script, execute and enjoy!
-
-Some scripts are not mine, all credits go to their respective owners.
+- You should be redirected to pastebin.com, copy the script, execute and enjoy!
+- Some scripts are not mine, all credits go to their respective owners.
     ]],
     TextSize = 14,
     TextColor3 = Config.Theme.Text,
@@ -1202,11 +1204,10 @@ Some scripts are not mine, all credits go to their respective owners.
     TextXAlignment = Enum.TextXAlignment.Left,
     TextYAlignment = Enum.TextYAlignment.Top,
     LayoutOrder = 1,
-    RichText = false,
 })
 helpText.Parent = helpContent
 
--- Spacer so the last line never sits flush with the bottom
+-- Spacer so last line never sits flush with the bottom edge
 local spacer = create("Frame", {
     BackgroundTransparency = 1,
     Size = UDim2.new(1, 0, 0, 10),
@@ -1214,7 +1215,7 @@ local spacer = create("Frame", {
 })
 spacer.Parent = helpContent
 
--- Dragging
+-- Dragging (grab the title to move the window)
 do
     local dragging, dragStart, startPos = false, nil, nil
     local function update(input)
@@ -1243,13 +1244,13 @@ do
     end)
 end
 
+-- Open/close handlers (expects a btnHelp button in your title bar)
 btnHelp.MouseButton1Click:Connect(function()
     helpOverlay.Visible = not helpOverlay.Visible
     if helpOverlay.Visible then
         helpOverlay.BackgroundTransparency = 1
         tween(helpOverlay, TweenInfo.new(0.2), {BackgroundTransparency = 0.4})
         helpScroll.CanvasPosition = Vector2.new(0, 0) -- reset to top
-        -- Do NOT set helpScroll.CanvasSize anywhere when using AutomaticCanvasSize
     else
         tween(helpOverlay, TweenInfo.new(0.2), {BackgroundTransparency = 1})
         task.delay(0.2, function() helpOverlay.Visible = false end)
@@ -1260,6 +1261,7 @@ helpBtnClose.MouseButton1Click:Connect(function()
     helpOverlay.Visible = false
 end)
 
+-- Click outside to close
 helpOverlay.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         local pos = Vector2.new(input.Position.X, input.Position.Y)
